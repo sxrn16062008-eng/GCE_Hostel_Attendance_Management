@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "890481708179",
+    "project_id": "gce-attendance-d74ec",
+    "storage_bucket": "gce-attendance-d74ec.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890481708179:android:a9e1c1c5ebe5feeb821166",
+        "android_client_info": {
+          "package_name": "com.example.gce_boys_hostel"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwOqtWWTFa3Qju-fn7Q818t6UsHSOOVSw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
