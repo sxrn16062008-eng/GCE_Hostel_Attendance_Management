@@ -261,7 +261,9 @@ class _TimingShiftSettingsDialogState extends State<TimingShiftSettingsDialog> {
 
     final auth = context.read<AppAuthProvider>();
     final provider = context.read<HostelDataProvider>();
-    final wardenName = auth.currentUser?.name ?? 'Chief Warden';
+    final wardenName = (auth.currentUser?.name.isNotEmpty == true)
+        ? auth.currentUser!.name
+        : 'Warden';
 
     final updated = ReminderScheduleModel(
       id: 'default_schedule',
@@ -337,7 +339,9 @@ class _TimingShiftSettingsDialogState extends State<TimingShiftSettingsDialog> {
 
     final auth = context.read<AppAuthProvider>();
     final provider = context.read<HostelDataProvider>();
-    final wardenName = auth.currentUser?.name ?? 'Chief Warden';
+    final wardenName = (auth.currentUser?.name.isNotEmpty == true)
+        ? auth.currentUser!.name
+        : 'Warden';
 
     try {
       await provider.sendAttendanceReminder(

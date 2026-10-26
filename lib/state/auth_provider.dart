@@ -8,6 +8,7 @@ class AuthProvider with ChangeNotifier {
   final AuthService _authService;
   AppUser? _currentUser;
   AuthStatus _status = AuthStatus.initial;
+  bool _isInitialized = false;
   String? _errorMessage;
 
   AuthProvider(this._authService) {
@@ -19,8 +20,7 @@ class AuthProvider with ChangeNotifier {
   bool get isAdmin => _currentUser?.isAdmin ?? false;
   bool get isRepresentative => _currentUser?.isRepresentative ?? true;
   AuthStatus get status => _status;
-  bool get isInitialized =>
-      _status != AuthStatus.initial && _status != AuthStatus.loading;
+  bool get isInitialized => _isInitialized;
   String? get errorMessage => _errorMessage;
 
   /// Initializes the auth state and restores session from local storage
@@ -38,6 +38,7 @@ class AuthProvider with ChangeNotifier {
     } catch (_) {
       _status = AuthStatus.unauthenticated;
     }
+    _isInitialized = true;
     notifyListeners();
   }
 

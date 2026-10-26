@@ -1,1 +1,24 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"gce-attendance-d74ec","appId":"1:890481708179:android:a9e1c1c5ebe5feeb821166","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"gce-attendance-d74ec","configurations":{"android":"1:890481708179:android:a9e1c1c5ebe5feeb821166"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "gce-attendance-d74ec",
+          "appId": "1:890481708179:android:a9e1c1c5ebe5feeb821166",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "gce-attendance-d74ec",
+          "configurations": {
+            "android": "1:890481708179:android:a9e1c1c5ebe5feeb821166"
+          }
+        }
+      }
+    }
+  }
+}

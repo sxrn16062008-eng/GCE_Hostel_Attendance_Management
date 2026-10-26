@@ -6,6 +6,8 @@ import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'state/auth_provider.dart';
 
+import 'widgets/network_status_wrapper.dart';
+
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
 
@@ -20,6 +22,11 @@ class AppRoot extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
+      builder: (context, child) {
+        return NetworkStatusWrapper(
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: _buildHome(authProvider),
     );
   }

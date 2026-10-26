@@ -49,9 +49,39 @@ class AuthService {
   }
 
   Future<void> _seedDefaultUsers() async {
+    final defaultWarden = AppUser(
+      id: 'admin_warden',
+      name: 'Chief Warden',
+      email: 'warden@gce.edu',
+      password: 'password123',
+      phone: '9876543210',
+      role: AppConstants.roleAdmin,
+      assignedRoomIds: [],
+      isActive: true,
+      createdAt: DateTime.now(),
+    );
+
+    final defaultRep = AppUser(
+      id: 'rep_default',
+      name: 'Hostel Representative',
+      email: 'rep@gce.edu',
+      password: 'password123',
+      phone: '9876543211',
+      role: AppConstants.roleRepresentative,
+      assignedRoomIds: [],
+      isActive: true,
+      createdAt: DateTime.now(),
+    );
+
+    // 1. Seed into SQLite database first so local/offline auth is always ready
+    try {
+      await _localDb.insertUser(defaultWarden);
+      await _localDb.insertUser(defaultRep);
+    } catch (_) {}
+
+    // 2. Ensure users exist in Cloud Firestore
     try {
       if (_firestore != null) {
-        // 1. Check if warden exists in Firestore
         final wardenDoc = await _firestore!
             .collection(AppConstants.colUsers)
             .where('role', isEqualTo: AppConstants.roleAdmin)
@@ -59,25 +89,12 @@ class AuthService {
             .get();
 
         if (wardenDoc.docs.isEmpty) {
-          final defaultWarden = AppUser(
-            id: 'admin_warden',
-            name: 'Chief Warden',
-            email: 'warden@gce.edu',
-            password: 'password123',
-            phone: '9876543210',
-            role: AppConstants.roleAdmin,
-            assignedRoomIds: [],
-            isActive: true,
-            createdAt: DateTime.now(),
-          );
           await _firestore!
               .collection(AppConstants.colUsers)
               .doc(defaultWarden.id)
               .set(defaultWarden.toMap());
-          await _localDb.insertUser(defaultWarden);
         }
 
-        // 2. Check if default rep exists in Firestore
         final repDoc = await _firestore!
             .collection(AppConstants.colUsers)
             .where('email', isEqualTo: 'rep@gce.edu')
@@ -85,144 +102,190 @@ class AuthService {
             .get();
 
         if (repDoc.docs.isEmpty) {
-          final defaultRep = AppUser(
-            id: 'rep_default',
-            name: 'Hostel Representative',
-            email: 'rep@gce.edu',
-            password: 'password123',
-            phone: '9876543211',
-            role: AppConstants.roleRepresentative,
-            assignedRoomIds: [],
-            isActive: true,
-            createdAt: DateTime.now(),
-          );
           await _firestore!
               .collection(AppConstants.colUsers)
               .doc(defaultRep.id)
               .set(defaultRep.toMap());
-          await _localDb.insertUser(defaultRep);
         }
-      } else {
-        throw Exception('Firestore not initialized');
       }
-    } catch (_) {
-      final defaultWarden = AppUser(
-        id: 'admin_warden',
-        name: 'Chief Warden',
-        email: 'warden@gce.edu',
-        password: 'password123',
-        phone: '9876543210',
-        role: AppConstants.roleAdmin,
-        assignedRoomIds: [],
-        isActive: true,
-      );
-      final defaultRep = AppUser(
-        id: 'rep_default',
-        name: 'Hostel Representative',
-        email: 'rep@gce.edu',
-        password: 'password123',
-        phone: '9876543211',
-        role: AppConstants.roleRepresentative,
-        assignedRoomIds: [],
-        isActive: true,
-      );
-      await _localDb.insertUser(defaultWarden);
-      await _localDb.insertUser(defaultRep);
+    } catch (e) {
+      debugPrint('Firestore default user seed notice: $e');
     }
   }
 
-  /// Sign In with Username or Email & Password checking Cloud Firestore users database
+  /// Sign In with Username or Email & Password checking Cloud Firestore and local databases
   Future<AppUser> signIn(String emailOrUsername, String password) async {
     final input = emailOrUsername.trim().toLowerCase();
     final cleanPass = password.trim();
-    final possibleEmails = [
+
+    if (input.isEmpty) {
+      throw Exception('Please enter your username or email address.');
+    }
+    if (cleanPass.isEmpty) {
+      throw Exception('Please enter your password.');
+    }
+
+    final isAdminAlias = [
+      'warden',
+      'admin',
+      'chief warden',
+      'chiefwarden',
+      'admin_warden',
+      'warden@gce.edu',
+      'admin@gce.edu',
+    ].contains(input);
+
+    final isRepAlias = [
+      'rep',
+      'rep1',
+      'representative',
+      'rep_default',
+      'rep@gce.edu',
+    ].contains(input);
+
+    final possibleEmails = <String>[
       input,
       if (!input.contains('@')) '$input@gce.edu',
+      if (isAdminAlias) ...['warden@gce.edu', 'admin@gce.edu', 'warden', 'admin'],
+      if (isRepAlias) ...['rep@gce.edu', 'rep', 'representative'],
     ];
+
+    AppUser? foundUser;
 
     // 1. Try fetching from Cloud Firestore `users` collection
     if (_firestore != null) {
       try {
-        final snap = await _firestore!
-            .collection(AppConstants.colUsers)
-            .where('email', whereIn: possibleEmails)
-            .limit(1)
-            .get();
+        const timeout = Duration(seconds: 3);
+        // 1a. Direct document lookup by doc ID
+        final docRef = _firestore!.collection(AppConstants.colUsers).doc(input);
+        final docSnap = await docRef.get().timeout(timeout);
+        if (docSnap.exists && docSnap.data() != null) {
+          foundUser = AppUser.fromSnapshot(docSnap);
+        }
 
-        if (snap.docs.isNotEmpty) {
-          final user = AppUser.fromSnapshot(snap.docs.first);
-
-          if (user.password.isNotEmpty && user.password != cleanPass) {
-            throw Exception('Incorrect password. Please try again.');
+        // 1b. If admin alias, try admin_warden doc directly
+        if (foundUser == null && isAdminAlias) {
+          final wardenDoc = await _firestore!
+              .collection(AppConstants.colUsers)
+              .doc('admin_warden')
+              .get()
+              .timeout(timeout);
+          if (wardenDoc.exists && wardenDoc.data() != null) {
+            foundUser = AppUser.fromSnapshot(wardenDoc);
           }
+        }
 
-          if (!user.isActive) {
-            throw Exception(
-                'Your representative account has been deactivated by the Warden.');
+        // 1c. Search by email candidates in Firestore
+        if (foundUser == null) {
+          final emailSnap = await _firestore!
+              .collection(AppConstants.colUsers)
+              .where('email', whereIn: possibleEmails.toSet().take(10).toList())
+              .limit(1)
+              .get()
+              .timeout(timeout);
+
+          if (emailSnap.docs.isNotEmpty) {
+            foundUser = AppUser.fromSnapshot(emailSnap.docs.first);
           }
+        }
 
-          await _localDb.insertUser(user);
-          _currentUser = user;
-          await _saveSessionUser(user);
-          return user;
+        // 1d. If admin alias and not yet found, find user with role 'admin'
+        if (foundUser == null && isAdminAlias) {
+          final adminSnap = await _firestore!
+              .collection(AppConstants.colUsers)
+              .where('role', isEqualTo: AppConstants.roleAdmin)
+              .limit(1)
+              .get()
+              .timeout(timeout);
+          if (adminSnap.docs.isNotEmpty) {
+            foundUser = AppUser.fromSnapshot(adminSnap.docs.first);
+          }
+        }
+
+        // 1e. Search by 10-digit phone number if input is digits
+        if (foundUser == null && RegExp(r'^[0-9]{10}$').hasMatch(input)) {
+          final phoneSnap = await _firestore!
+              .collection(AppConstants.colUsers)
+              .where('phone', isEqualTo: input)
+              .limit(1)
+              .get()
+              .timeout(timeout);
+          if (phoneSnap.docs.isNotEmpty) {
+            foundUser = AppUser.fromSnapshot(phoneSnap.docs.first);
+          }
         }
       } catch (e) {
-        if (e.toString().contains('Incorrect password') ||
-            e.toString().contains('deactivated')) {
-          rethrow;
-        }
+        debugPrint('Firestore authentication lookup notice: $e');
       }
     }
 
     // 2. Fallback to Local SQLite database
-    for (final candidate in possibleEmails) {
-      final localUser = await _localDb.getUserByEmail(candidate);
-      if (localUser != null) {
-        if (localUser.password.isNotEmpty && localUser.password != cleanPass) {
-          throw Exception('Incorrect password. Please try again.');
+    if (foundUser == null) {
+      for (final candidate in possibleEmails.toSet()) {
+        final localUser = await _localDb.getUserByEmail(candidate);
+        if (localUser != null) {
+          foundUser = localUser;
+          break;
         }
-        if (!localUser.isActive) {
-          throw Exception('Your account is currently deactivated.');
+      }
+
+      if (foundUser == null && isAdminAlias) {
+        final allUsers = await _localDb.getUsers();
+        for (final u in allUsers) {
+          if (u.isAdmin) {
+            foundUser = u;
+            break;
+          }
         }
-        _currentUser = localUser;
-        await _saveSessionUser(localUser);
-        return localUser;
       }
     }
 
-    // 3. Fallback hardcoded credentials if database is initializing
-    if ((input == 'warden' || input == 'warden@gce.edu') &&
-        cleanPass == 'password123') {
-      final warden = AppUser(
-        id: 'admin_warden',
-        name: 'Chief Warden',
-        email: 'warden@gce.edu',
-        password: 'password123',
-        phone: '9876543210',
-        role: AppConstants.roleAdmin,
-      );
-      _currentUser = warden;
-      await _saveSessionUser(warden);
-      return warden;
+    // 3. Fallback to default in-memory accounts if not yet created in DB
+    if (foundUser == null) {
+      if (isAdminAlias) {
+        foundUser = AppUser(
+          id: 'admin_warden',
+          name: 'Chief Warden',
+          email: 'warden@gce.edu',
+          password: 'password123',
+          phone: '9876543210',
+          role: AppConstants.roleAdmin,
+          assignedRoomIds: [],
+          isActive: true,
+        );
+      } else if (isRepAlias) {
+        foundUser = AppUser(
+          id: 'rep_default',
+          name: 'Hostel Representative',
+          email: 'rep@gce.edu',
+          password: 'password123',
+          phone: '9876543211',
+          role: AppConstants.roleRepresentative,
+          assignedRoomIds: [],
+          isActive: true,
+        );
+      }
     }
 
-    if ((input == 'rep' || input == 'rep@gce.edu') &&
-        cleanPass == 'password123') {
-      final rep = AppUser(
-        id: 'rep_default',
-        name: 'Hostel Representative',
-        email: 'rep@gce.edu',
-        password: 'password123',
-        phone: '9876543211',
-        role: AppConstants.roleRepresentative,
-      );
-      _currentUser = rep;
-      await _saveSessionUser(rep);
-      return rep;
+    // 4. Validate credentials and account status
+    if (foundUser != null) {
+      if (foundUser.password.isNotEmpty && foundUser.password != cleanPass) {
+        throw Exception('Incorrect password. Please verify your password and try again.');
+      }
+
+      if (!foundUser.isActive) {
+        throw Exception(
+            'Your representative account has been deactivated by the Warden.');
+      }
+
+      await _localDb.insertUser(foundUser);
+      _currentUser = foundUser;
+      await _saveSessionUser(foundUser);
+      return foundUser;
     }
 
     throw Exception(
-        'No account found for "$emailOrUsername". Please contact the Warden to create your representative account.');
+        'No account found for "$emailOrUsername". For Warden login, enter username "warden" or "admin" with password "password123".');
   }
 
   /// Restores persisted session from device storage across app restarts

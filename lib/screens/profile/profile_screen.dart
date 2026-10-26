@@ -17,7 +17,6 @@ class ProfileScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final auth = context.watch<AppAuthProvider>();
     final themeProvider = context.watch<ThemeProvider>();
-    final hostelProvider = context.read<HostelDataProvider>();
     final user = auth.currentUser;
 
     final initials = user != null && user.name.trim().isNotEmpty
@@ -250,77 +249,6 @@ class ProfileScreen extends StatelessWidget {
                       },
                     ),
                   ),
-                  const Divider(height: 1),
-                  // Reset Sample Data Option
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.blueGrey.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.restart_alt_rounded, color: Colors.blueGrey, size: 22),
-                    ),
-                    title: const Text('Reset Sample Demo Data', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Re-seed initial rooms 101-104 and sample students', style: TextStyle(fontSize: 12)),
-                    onTap: () async {
-                      final confirm = await ConfirmDialog.show(
-                        context,
-                        title: 'Reset Demo Data?',
-                        message: 'This will restore sample rooms 101-104 and demo students.',
-                        confirmText: 'Reset',
-                      );
-                      if (confirm == true && context.mounted) {
-                        hostelProvider.resetToDemo();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Sample demo data reset successfully'),
-                            backgroundColor: AppConstants.statusPresentColor,
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // About Application Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('About System', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
-                  const SizedBox(height: 12),
-                  const Row(
-                    children: [
-                      Icon(Icons.school_rounded, size: 20, color: AppTheme.primaryLight),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          AppConstants.collegeName,
-                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Row(
-                    children: [
-                      Icon(Icons.shield_outlined, size: 20, color: AppTheme.primaryLight),
-                      SizedBox(width: 10),
-                      Text('Version ${AppConstants.appVersion}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -425,33 +353,37 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
           await hostelProvider.updateReminderSchedule(sched);
         }
 
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Display name updated to "$newName" successfully!',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Display name updated to "$newName" successfully!',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              backgroundColor: AppConstants.statusPresentColor,
+              behavior: SnackBarBehavior.floating,
             ),
-            backgroundColor: AppConstants.statusPresentColor,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+          );
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: AppConstants.statusAbsentColor,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error),
+              backgroundColor: AppConstants.statusAbsentColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     }
   }

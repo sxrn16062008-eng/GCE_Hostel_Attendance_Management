@@ -82,6 +82,33 @@ class AppConstants {
     'Critical',
   ];
 
+  // Mess & Food Complaint Meal Types & Categories
+  static const List<String> messMealTypes = [
+    'Breakfast',
+    'Lunch',
+    'Snacks / Tea',
+    'Dinner',
+    'General / All Meals',
+  ];
+
+  static const List<String> messComplaintCategories = [
+    'Food Quality & Taste (Poor taste / Uncooked / Spoiled)',
+    'Late Food Serving / Meal Delay',
+    'Food Shortage / Insufficient Quantity',
+    'Hygiene & Mess Cleanliness',
+    'Drinking Water & Utensils Cleanliness',
+    'Menu Deviation / Scheduled Item Not Served',
+    'Mess Staff Behavior / Service Issue',
+    'Other Mess Issue',
+  ];
+
+  static const List<String> messComplaintSeverities = [
+    'Low',
+    'Medium',
+    'High',
+    'Critical',
+  ];
+
   // Firestore / Local Collections
   static const String colUsers = 'users';
   static const String colRooms = 'rooms';
@@ -90,12 +117,14 @@ class AppConstants {
   static const String colBlocks = 'blocks';
   static const String colComplaints = 'complaints';
   static const String colStudentComplaints = 'student_complaints';
+  static const String colMessComplaints = 'mess_complaints';
   static const String collectionUsers = 'users';
   static const String collectionRooms = 'rooms';
   static const String collectionStudents = 'students';
   static const String collectionAttendance = 'attendance';
   static const String collectionComplaints = 'complaints';
   static const String collectionStudentComplaints = 'student_complaints';
+  static const String collectionMessComplaints = 'mess_complaints';
 
   // Color Palette Accents
   static const Color primaryNavy = Color(0xFF1E3A8A); // Indigo / Deep Navy

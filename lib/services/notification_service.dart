@@ -135,7 +135,7 @@ class NotificationService {
         enableVibration: true,
         playSound: true,
         sound: RawResourceAndroidNotificationSound('ringtone'),
-        fullScreenIntent: true,
+        fullScreenIntent: false,
         category: AndroidNotificationCategory.reminder,
         visibility: NotificationVisibility.public,
       );
@@ -217,7 +217,7 @@ class NotificationService {
         enableVibration: true,
         playSound: true,
         sound: RawResourceAndroidNotificationSound('ringtone'),
-        fullScreenIntent: true,
+        fullScreenIntent: false,
         category: AndroidNotificationCategory.reminder,
         visibility: NotificationVisibility.public,
       );
@@ -464,6 +464,45 @@ class NotificationService {
       title: title,
       body: message,
       payload: newNotification.id,
+    );
+
+    return newNotification;
+  }
+
+  /// Sends mess complaint alert to Warden in Firestore and triggers instant local notification
+  Future<AppNotificationModel> sendMessComplaintNotification({
+    required String title,
+    required String message,
+    required String senderName,
+  }) async {
+    final newNotification = AppNotificationModel(
+      id: const Uuid().v4(),
+      title: title,
+      message: message,
+      senderName: senderName,
+      targetRole: 'admin',
+      type: 'mess_complaint',
+      createdAt: DateTime.now(),
+      isRead: false,
+    );
+
+    // 1. Save to Cloud Firestore
+    if (_firestore != null) {
+      try {
+        await _firestore!
+            .collection('notifications')
+            .doc(newNotification.id)
+            .set(newNotification.toMap());
+      } catch (e) {
+        debugPrint('Firestore offline, saving notification locally: $e');
+      }
+    }
+
+    // 2. Trigger instant local push notification on device
+    await showLocalNotification(
+      title: title,
+      body: message,
+      payload: 'mess_complaint_${newNotification.id}',
     );
 
     return newNotification;

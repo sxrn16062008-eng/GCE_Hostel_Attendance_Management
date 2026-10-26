@@ -6,6 +6,7 @@ import '../models/attendance_model.dart';
 import '../models/user_model.dart';
 import '../models/complaint_model.dart';
 import '../models/student_complaint_model.dart';
+import '../models/mess_complaint_model.dart';
 import '../models/notification_model.dart';
 import '../models/reminder_schedule_model.dart';
 import '../services/local_database.dart';
@@ -28,6 +29,7 @@ class HostelDataProvider extends ChangeNotifier {
   List<AppUser> _representatives = [];
   List<ComplaintModel> _complaints = [];
   List<StudentComplaintModel> _studentComplaints = [];
+  List<MessComplaintModel> _messComplaints = [];
   List<AppNotificationModel> _notifications = [];
   ReminderScheduleModel _reminderSchedule = ReminderScheduleModel.defaultSchedule();
 
@@ -41,6 +43,7 @@ class HostelDataProvider extends ChangeNotifier {
   StreamSubscription? _repsSub;
   StreamSubscription? _complaintsSub;
   StreamSubscription? _studentComplaintsSub;
+  StreamSubscription? _messComplaintsSub;
   StreamSubscription? _scheduleSub;
   StreamSubscription? _notificationsSub;
   Timer? _reminderHeartbeatTimer;
@@ -60,10 +63,12 @@ class HostelDataProvider extends ChangeNotifier {
   List<AppUser> get representatives => _representatives;
   List<ComplaintModel> get complaints => _complaints;
   List<StudentComplaintModel> get studentComplaints => _studentComplaints;
+  List<MessComplaintModel> get messComplaints => _messComplaints;
   List<AppNotificationModel> get notifications => _notifications;
   ReminderScheduleModel get reminderSchedule => _reminderSchedule;
   int get pendingComplaintsCount => _complaints.where((c) => c.isPending).length;
   int get pendingStudentComplaintsCount => _studentComplaints.where((c) => c.isPending || c.isUnderReview).length;
+  int get pendingMessComplaintsCount => _messComplaints.where((c) => c.isPending || c.isUnderReview).length;
   int get unreadNotificationsCount => _notifications.where((n) => !n.isRead).length;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -84,6 +89,7 @@ class HostelDataProvider extends ChangeNotifier {
       _representatives = await _localDb.getUsers();
       _complaints = await _localDb.getAllComplaints();
       _studentComplaints = await _localDb.getAllStudentComplaints();
+      _messComplaints = await _localDb.getAllMessComplaints();
       _isLoading = false;
       notifyListeners();
     } catch (_) {}
@@ -193,6 +199,17 @@ class HostelDataProvider extends ChangeNotifier {
       onError: (e) => debugPrint('Firestore student complaints stream error: $e'),
     );
 
+    // Stream Mess Complaints
+    _messComplaintsSub?.cancel();
+    _messComplaintsSub = _firestoreService.streamMessComplaints().listen(
+      (list) async {
+        _messComplaints = list;
+        notifyListeners();
+        await _localDb.insertMessComplaintsBatch(list);
+      },
+      onError: (e) => debugPrint('Firestore mess complaints stream error: $e'),
+    );
+
     // Stream Reminder Schedule
     _scheduleSub?.cancel();
     _scheduleSub = _notificationService.reminderScheduleStream().listen(
@@ -225,6 +242,7 @@ class HostelDataProvider extends ChangeNotifier {
       _representatives = await _firestoreService.getRepresentatives();
       _complaints = await _firestoreService.getComplaints();
       _studentComplaints = await _firestoreService.getStudentComplaints();
+      _messComplaints = await _firestoreService.getMessComplaints();
       await loadReminderSchedule();
       notifyListeners();
     } catch (e) {
@@ -919,6 +937,97 @@ class HostelDataProvider extends ChangeNotifier {
     }
   }
 
+  // ─── MESS COMPLAINTS (FOOD & CANTEEN) ──────────────────────────────────
+
+  Future<void> addMessComplaint({
+    required String mealType,
+    required String category,
+    required String severity,
+    required String title,
+    required String description,
+    required String reportedBy,
+    required String reportedByName,
+    String reportedByRole = 'representative',
+    String reportedByPhone = '',
+  }) async {
+    try {
+      final complaint = await _firestoreService.addMessComplaint(
+        mealType: mealType,
+        category: category,
+        severity: severity,
+        title: title,
+        description: description,
+        reportedBy: reportedBy,
+        reportedByName: reportedByName,
+        reportedByRole: reportedByRole,
+        reportedByPhone: reportedByPhone,
+      );
+      await _localDb.insertMessComplaint(complaint);
+      _messComplaints.insert(0, complaint);
+      notifyListeners();
+
+      // Immediately notify Warden about the mess complaint
+      try {
+        final notif = await _notificationService.sendMessComplaintNotification(
+          title: '🚨 New Mess Complaint ($mealType)',
+          message: '$title - Reported by $reportedByName ($severity Urgency)',
+          senderName: reportedByName,
+        );
+        _notifications.insert(0, notif);
+        notifyListeners();
+      } catch (_) {}
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> updateMessComplaintStatus({
+    required String complaintId,
+    required String status,
+    String? wardenAction,
+    String? wardenRemarks,
+  }) async {
+    try {
+      await _firestoreService.updateMessComplaintStatus(
+        complaintId: complaintId,
+        status: status,
+        wardenAction: wardenAction,
+        wardenRemarks: wardenRemarks,
+      );
+      final index = _messComplaints.indexWhere((c) => c.id == complaintId);
+      if (index >= 0) {
+        final updated = _messComplaints[index].copyWith(
+          status: status,
+          wardenAction: wardenAction,
+          wardenRemarks: wardenRemarks,
+          resolvedAt: (status == 'resolved' || status == 'action_taken' || status == 'dismissed') ? DateTime.now() : null,
+        );
+        _messComplaints[index] = updated;
+        await _localDb.updateMessComplaint(updated);
+        notifyListeners();
+      }
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> deleteMessComplaint(String complaintId) async {
+    try {
+      await _firestoreService.deleteMessComplaint(complaintId);
+      await _localDb.deleteMessComplaint(complaintId);
+      _messComplaints.removeWhere((c) => c.id == complaintId);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   // ─── NOTIFICATION & REMINDER MANAGEMENT ─────────────────────────────────
 
   Future<void> loadNotifications() async {
@@ -1007,6 +1116,7 @@ class HostelDataProvider extends ChangeNotifier {
     _repsSub?.cancel();
     _complaintsSub?.cancel();
     _studentComplaintsSub?.cancel();
+    _messComplaintsSub?.cancel();
     _scheduleSub?.cancel();
     _notificationsSub?.cancel();
     _reminderHeartbeatTimer?.cancel();

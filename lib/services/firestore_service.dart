@@ -5,6 +5,7 @@ import '../models/student_model.dart';
 import '../models/user_model.dart';
 import '../models/complaint_model.dart';
 import '../models/student_complaint_model.dart';
+import '../models/mess_complaint_model.dart';
 import '../utils/constants.dart';
 import 'sample_data_service.dart';
 
@@ -18,6 +19,7 @@ class FirestoreService {
   List<AppUser> _localUsers = SampleDataService.getInitialUsers();
   List<ComplaintModel> _localComplaints = [];
   List<StudentComplaintModel> _localStudentComplaints = [];
+  List<MessComplaintModel> _localMessComplaints = SampleDataService.getInitialMessComplaints();
 
   FirestoreService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -843,6 +845,130 @@ class FirestoreService {
     }
   }
 
+  // =========================================================================
+  // MESS COMPLAINTS MANAGEMENT
+  // =========================================================================
+
+  Stream<List<MessComplaintModel>> streamMessComplaints({String? mealType, String? reportedBy}) {
+    if (isFirebaseAvailable) {
+      Query query = _firestore!.collection(AppConstants.colMessComplaints);
+      if (mealType != null && mealType.isNotEmpty) {
+        query = query.where('mealType', isEqualTo: mealType);
+      }
+      if (reportedBy != null && reportedBy.isNotEmpty) {
+        query = query.where('reportedBy', isEqualTo: reportedBy);
+      }
+      return query.snapshots().map((snapshot) {
+        final list = snapshot.docs.map((doc) => MessComplaintModel.fromSnapshot(doc)).toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
+    } else {
+      return Stream.value(_localMessComplaints);
+    }
+  }
+
+  Future<List<MessComplaintModel>> getMessComplaints() async {
+    if (isFirebaseAvailable) {
+      try {
+        final snapshot = await _firestore!
+            .collection(AppConstants.colMessComplaints)
+            .get();
+        final list = snapshot.docs.map((doc) => MessComplaintModel.fromSnapshot(doc)).toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      } catch (_) {
+        return _localMessComplaints;
+      }
+    }
+    return _localMessComplaints;
+  }
+
+  Future<MessComplaintModel> addMessComplaint({
+    required String mealType,
+    required String category,
+    required String severity,
+    required String title,
+    required String description,
+    required String reportedBy,
+    required String reportedByName,
+    String reportedByRole = 'representative',
+    String reportedByPhone = '',
+  }) async {
+    final newId = isFirebaseAvailable
+        ? _firestore!.collection(AppConstants.colMessComplaints).doc().id
+        : 'mess_comp_${_uuid.v4().substring(0, 8)}';
+
+    final complaint = MessComplaintModel(
+      id: newId,
+      mealType: mealType,
+      category: category,
+      severity: severity,
+      title: title.trim(),
+      description: description.trim(),
+      reportedBy: reportedBy,
+      reportedByName: reportedByName.trim(),
+      reportedByRole: reportedByRole,
+      reportedByPhone: reportedByPhone.trim(),
+      status: 'pending',
+      createdAt: DateTime.now(),
+    );
+
+    if (isFirebaseAvailable) {
+      await _firestore!
+          .collection(AppConstants.colMessComplaints)
+          .doc(newId)
+          .set(complaint.toMap());
+    } else {
+      _localMessComplaints.insert(0, complaint);
+    }
+
+    return complaint;
+  }
+
+  Future<void> updateMessComplaintStatus({
+    required String complaintId,
+    required String status,
+    String? wardenAction,
+    String? wardenRemarks,
+  }) async {
+    final now = (status == 'resolved' || status == 'action_taken' || status == 'dismissed') ? DateTime.now() : null;
+    final updateData = <String, dynamic>{
+      'status': status,
+      if (wardenAction != null) 'wardenAction': wardenAction,
+      if (wardenRemarks != null) 'wardenRemarks': wardenRemarks,
+      if (now != null) 'resolvedAt': now.toIso8601String(),
+    };
+
+    if (isFirebaseAvailable) {
+      await _firestore!
+          .collection(AppConstants.colMessComplaints)
+          .doc(complaintId)
+          .update(updateData);
+    } else {
+      final index = _localMessComplaints.indexWhere((c) => c.id == complaintId);
+      if (index >= 0) {
+        _localMessComplaints[index] = _localMessComplaints[index].copyWith(
+          status: status,
+          wardenAction: wardenAction,
+          wardenRemarks: wardenRemarks,
+          resolvedAt: now,
+        );
+      }
+    }
+  }
+
+  Future<void> deleteMessComplaint(String complaintId) async {
+    if (isFirebaseAvailable) {
+      await _firestore!
+          .collection(AppConstants.colMessComplaints)
+          .doc(complaintId)
+          .delete();
+    } else {
+      _localMessComplaints.removeWhere((c) => c.id == complaintId);
+    }
+  }
+
   /// Reset to sample initial state
   void resetDemoData() {
     _localRooms = SampleDataService.getInitialRooms();
@@ -850,6 +976,7 @@ class FirestoreService {
     _localUsers = SampleDataService.getInitialUsers();
     _localComplaints = [];
     _localStudentComplaints = [];
+    _localMessComplaints = [];
   }
 }
 

@@ -17,7 +17,11 @@ import '../rooms/rooms_list_screen.dart';
 import '../students/add_edit_student_screen.dart';
 import '../students/students_list_screen.dart';
 import '../student_complaints/student_complaints_list_screen.dart';
+import '../mess_complaints/mess_complaints_list_screen.dart';
+import '../mess_complaints/add_mess_complaint_dialog.dart';
+import '../mess_complaints/mess_complaint_details_dialog.dart';
 import 'representatives_list_screen.dart';
+import '../../widgets/change_password_dialog.dart';
 
 class WardenDashboard extends StatelessWidget {
   const WardenDashboard({super.key});
@@ -50,95 +54,112 @@ class WardenDashboard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF4F46E5), Color(0xFF06B6D4)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF4F46E5)
-                                    .withValues(alpha: 0.35),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              (user?.name.isNotEmpty == true)
-                                  ? user!.name[0].toUpperCase()
-                                  : 'W',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  'Chief Warden',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20,
-                                        letterSpacing: -0.5,
-                                      ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => ChangePasswordDialog.show(context),
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF4F46E5), Color(0xFF06B6D4)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.amber.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                        color: Colors.amber
-                                            .withValues(alpha: 0.4)),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF4F46E5)
+                                        .withValues(alpha: 0.35),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
                                   ),
-                                  child: const Text(
-                                    'ADMIN',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.amber,
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  (user?.name.isNotEmpty == true)
+                                      ? user!.name[0].toUpperCase()
+                                      : 'W',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        (user?.name.isNotEmpty == true)
+                                            ? user!.name
+                                            : 'Warden',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                              letterSpacing: -0.5,
+                                            ),
+                                      ),
                                     ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                            color: Colors.amber
+                                                .withValues(alpha: 0.4)),
+                                      ),
+                                      child: const Text(
+                                        'ADMIN',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.amber,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  user?.email ?? 'Hostel Administration',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              user?.email ?? 'Hostel Administration',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: isDark
-                                    ? const Color(0xFF94A3B8)
-                                    : const Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
                           icon: Badge(
@@ -166,10 +187,10 @@ class WardenDashboard extends StatelessWidget {
                           ),
                           onPressed: () => NotificationsDialog.show(context),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 8),
+                              horizontal: 8, vertical: 8),
                           decoration: BoxDecoration(
                             color: isDark
                                 ? const Color(0xFF162035)
@@ -182,14 +203,15 @@ class WardenDashboard extends StatelessWidget {
                             ),
                           ),
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.calendar_today_rounded,
-                                  size: 14, color: AppTheme.primaryLight),
-                              const SizedBox(width: 6),
+                                  size: 13, color: AppTheme.primaryLight),
+                              const SizedBox(width: 4),
                               Text(
                                 AppDateUtils.formatShort(DateTime.now()),
                                 style: const TextStyle(
-                                    fontSize: 12, fontWeight: FontWeight.bold),
+                                    fontSize: 11, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -705,6 +727,23 @@ class WardenDashboard extends StatelessWidget {
                     Expanded(
                       child: _buildActionButton(
                         context,
+                        title: 'Mess Issues',
+                        icon: Icons.restaurant_rounded,
+                        color: Colors.deepOrange,
+                        badgeCount: provider.pendingMessComplaintsCount,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const MessComplaintsListScreen()),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildActionButton(
+                        context,
                         title: 'Mark Attendance',
                         icon: Icons.how_to_reg_rounded,
                         color: AppTheme.primary,
@@ -716,7 +755,11 @@ class WardenDashboard extends StatelessWidget {
                         },
                       ),
                     ),
-                    const SizedBox(width: 10),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
                     Expanded(
                       child: _buildActionButton(
                         context,
@@ -726,11 +769,7 @@ class WardenDashboard extends StatelessWidget {
                         onTap: () => AddEditRoomDialog.show(context),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
+                    const SizedBox(width: 10),
                     Expanded(
                       child: _buildActionButton(
                         context,
@@ -742,6 +781,26 @@ class WardenDashboard extends StatelessWidget {
                             MaterialPageRoute(
                                 builder: (_) =>
                                     const AddEditStudentScreen()),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildActionButton(
+                        context,
+                        title: 'View History',
+                        icon: Icons.history_rounded,
+                        color: Colors.orange,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const AttendanceHistoryScreen()),
                           );
                         },
                       ),
@@ -763,6 +822,226 @@ class WardenDashboard extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 22),
+
+                // ─── DEDICATED MESS MONITORING SECTION FOR WARDEN ─────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Mess & Food Monitoring',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const MessComplaintsListScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_forward_rounded, size: 16, color: Colors.deepOrange),
+                      label: Text(
+                        'View All (${provider.messComplaints.length})',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF152037) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF1E2D4A) : const Color(0xFFE2E8F0),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.deepOrange.withValues(alpha: isDark ? 0.1 : 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.deepOrange.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.restaurant_rounded,
+                              color: Colors.deepOrange,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'Mess Complaints Review',
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
+                                    if (provider.pendingMessComplaintsCount > 0) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.deepOrange,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          '${provider.pendingMessComplaintsCount} Unresolved',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Review food quality, delays, and take contractor actions',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Recent Mess Complaints List Preview (if any)
+                      if (provider.messComplaints.isNotEmpty) ...[
+                        ...provider.messComplaints.take(2).map((comp) {
+                          final isCompResolved = comp.isResolved || comp.isDismissed;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0D1526) : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF1E2D4A) : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            child: InkWell(
+                              onTap: () => MessComplaintDetailsDialog.show(context, comp),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.deepOrange.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      comp.mealType,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.deepOrange,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      comp.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isCompResolved
+                                          ? Colors.green.withValues(alpha: 0.15)
+                                          : Colors.amber.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      comp.isPending ? 'Pending' : (isCompResolved ? 'Resolved' : 'In Review'),
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isCompResolved ? Colors.green : Colors.amber,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 6),
+                      ],
+
+                      // Action row inside card
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => AddMessComplaintDialog.show(context),
+                              icon: const Icon(Icons.add_comment_rounded, size: 14, color: Colors.deepOrange),
+                              label: const Text(
+                                'Record Mess Issue',
+                                style: TextStyle(fontSize: 12, color: Colors.deepOrange, fontWeight: FontWeight.bold),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.deepOrange.withValues(alpha: 0.5)),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const MessComplaintsListScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.list_alt_rounded, size: 14),
+                              label: Text(
+                                'Manage Mess (${provider.messComplaints.length})',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepOrange,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

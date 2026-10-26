@@ -2,6 +2,7 @@ import '../models/user_model.dart';
 import '../models/room_model.dart';
 import '../models/student_model.dart';
 import '../models/attendance_model.dart';
+import '../models/mess_complaint_model.dart';
 import '../utils/constants.dart';
 import '../utils/date_utils.dart';
 
@@ -250,4 +251,40 @@ class SampleDataService {
       ),
     ];
   }
+
+  static List<MessComplaintModel> getInitialMessComplaints() {
+    return [
+      MessComplaintModel(
+        id: 'mess_comp_001',
+        mealType: 'Lunch',
+        category: 'Food Quality & Taste',
+        severity: 'Medium',
+        title: 'Rice and Sambar Quality Issue',
+        description: 'Rice was undercooked and sambar lacked salt/spices during lunch.',
+        reportedBy: 'rep_1',
+        reportedByName: 'V. Senthil Nathan',
+        reportedByRole: 'representative',
+        reportedByPhone: '9876543211',
+        status: 'pending',
+        createdAt: DateTime.now().subtract(const Duration(hours: 3)),
+      ),
+      MessComplaintModel(
+        id: 'mess_comp_002',
+        mealType: 'Dinner',
+        category: 'Food Shortage / Insufficient Quantity',
+        severity: 'High',
+        title: 'Chapati shortage around 8:45 PM',
+        description: 'Chapatis got exhausted early and many 3rd & 4th year students had to wait 30 minutes.',
+        reportedBy: 'rep_2',
+        reportedByName: 'M. Praveen Kumar',
+        reportedByRole: 'representative',
+        reportedByPhone: '9876543212',
+        status: 'under_review',
+        wardenAction: 'Spoke with Head Cook to increase dough preparation by 20%',
+        wardenRemarks: 'Mess contractor warned to maintain buffer stock for late diners.',
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+      ),
+    ];
+  }
 }
+

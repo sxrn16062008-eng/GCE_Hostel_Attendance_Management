@@ -57,7 +57,9 @@ class _SendReminderDialogState extends State<SendReminderDialog> {
 
     final auth = context.read<AppAuthProvider>();
     final provider = context.read<HostelDataProvider>();
-    final senderName = auth.currentUser?.name ?? 'Chief Warden';
+    final senderName = (auth.currentUser?.name.isNotEmpty == true)
+        ? auth.currentUser!.name
+        : 'Warden';
 
     try {
       await provider.sendAttendanceReminder(

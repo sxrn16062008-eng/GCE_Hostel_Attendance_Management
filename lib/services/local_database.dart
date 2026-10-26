@@ -9,6 +9,7 @@ import '../models/attendance_model.dart';
 import '../models/user_model.dart';
 import '../models/complaint_model.dart';
 import '../models/student_complaint_model.dart';
+import '../models/mess_complaint_model.dart';
 import '../utils/constants.dart';
 
 class LocalDatabase {
@@ -152,6 +153,26 @@ class LocalDatabase {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS mess_complaints (
+        id TEXT PRIMARY KEY,
+        mealType TEXT NOT NULL,
+        category TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        reportedBy TEXT NOT NULL,
+        reportedByName TEXT NOT NULL,
+        reportedByRole TEXT,
+        reportedByPhone TEXT,
+        status TEXT NOT NULL,
+        wardenAction TEXT,
+        wardenRemarks TEXT,
+        createdAt TEXT NOT NULL,
+        resolvedAt TEXT
+      )
+    ''');
+
     // Seed default blocks
     for (final b in AppConstants.defaultBlocks) {
       await db.insert(
@@ -255,6 +276,26 @@ class LocalDatabase {
         block TEXT,
         department TEXT,
         incidentCategory TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        reportedBy TEXT NOT NULL,
+        reportedByName TEXT NOT NULL,
+        reportedByRole TEXT,
+        reportedByPhone TEXT,
+        status TEXT NOT NULL,
+        wardenAction TEXT,
+        wardenRemarks TEXT,
+        createdAt TEXT NOT NULL,
+        resolvedAt TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS mess_complaints (
+        id TEXT PRIMARY KEY,
+        mealType TEXT NOT NULL,
+        category TEXT NOT NULL,
         severity TEXT NOT NULL,
         title TEXT NOT NULL,
         description TEXT NOT NULL,
@@ -714,6 +755,55 @@ class LocalDatabase {
       orderBy: 'createdAt DESC',
     );
     return maps.map((m) => StudentComplaintModel.fromMap(m)).toList();
+  }
+
+  // ─── MESS COMPLAINTS (FOOD & CANTEEN) ──────────────────────────────────
+
+  Future<void> insertMessComplaint(MessComplaintModel mc) async {
+    final db = await database;
+    await db.insert(
+      'mess_complaints',
+      mc.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> insertMessComplaintsBatch(List<MessComplaintModel> list) async {
+    final db = await database;
+    final batch = db.batch();
+    for (final mc in list) {
+      batch.insert(
+        'mess_complaints',
+        mc.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> updateMessComplaint(MessComplaintModel mc) async {
+    final db = await database;
+    await db.update(
+      'mess_complaints',
+      mc.toMap(),
+      where: 'id = ?',
+      whereArgs: [mc.id],
+    );
+  }
+
+  Future<void> deleteMessComplaint(String id) async {
+    final db = await database;
+    await db.delete(
+      'mess_complaints',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<List<MessComplaintModel>> getAllMessComplaints() async {
+    final db = await database;
+    final maps = await db.query('mess_complaints', orderBy: 'createdAt DESC');
+    return maps.map((m) => MessComplaintModel.fromMap(m)).toList();
   }
 
   Future<void> close() async {

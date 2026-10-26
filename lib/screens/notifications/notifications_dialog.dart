@@ -5,6 +5,7 @@ import '../../state/hostel_data_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/date_utils.dart';
 import '../attendance/mark_attendance_screen.dart';
+import '../mess_complaints/mess_complaints_list_screen.dart';
 
 class NotificationsDialog extends StatelessWidget {
   const NotificationsDialog({super.key});
@@ -142,6 +143,21 @@ class NotificationsDialog extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final notif = notifications[index];
                           final isReminder = notif.type == 'attendance_reminder';
+                          final isMessComplaint = notif.type == 'mess_complaint';
+
+                          Color badgeBg = AppTheme.primaryLight.withValues(alpha: 0.2);
+                          Color iconColor = AppTheme.primaryLight;
+                          IconData notifIcon = Icons.info_outline_rounded;
+
+                          if (isReminder) {
+                            badgeBg = Colors.amber.withValues(alpha: 0.2);
+                            iconColor = Colors.amber[700]!;
+                            notifIcon = Icons.notification_important_rounded;
+                          } else if (isMessComplaint) {
+                            badgeBg = Colors.deepOrange.withValues(alpha: 0.2);
+                            iconColor = Colors.deepOrange;
+                            notifIcon = Icons.restaurant_rounded;
+                          }
 
                           return Container(
                             padding: const EdgeInsets.all(14),
@@ -153,7 +169,7 @@ class NotificationsDialog extends StatelessWidget {
                               border: Border.all(
                                 color: notif.isRead
                                     ? (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))
-                                    : AppTheme.primaryLight.withValues(alpha: 0.5),
+                                    : (isMessComplaint ? Colors.deepOrange.withValues(alpha: 0.5) : AppTheme.primaryLight.withValues(alpha: 0.5)),
                                 width: notif.isRead ? 1 : 1.5,
                               ),
                             ),
@@ -165,17 +181,13 @@ class NotificationsDialog extends StatelessWidget {
                                     Container(
                                       padding: const EdgeInsets.all(6),
                                       decoration: BoxDecoration(
-                                        color: isReminder
-                                            ? Colors.amber.withValues(alpha: 0.2)
-                                            : AppTheme.primaryLight.withValues(alpha: 0.2),
+                                        color: badgeBg,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Icon(
-                                        isReminder
-                                            ? Icons.notification_important_rounded
-                                            : Icons.info_outline_rounded,
+                                        notifIcon,
                                         size: 16,
-                                        color: isReminder ? Colors.amber[700] : AppTheme.primaryLight,
+                                        color: iconColor,
                                       ),
                                     ),
                                     const SizedBox(width: 8),
@@ -231,6 +243,24 @@ class NotificationsDialog extends StatelessWidget {
                                         style: ElevatedButton.styleFrom(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                           backgroundColor: AppTheme.primary,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ),
+                                    if (isMessComplaint)
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(builder: (_) => const MessComplaintsListScreen()),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.restaurant_rounded, size: 14),
+                                        label: const Text('View Mess Issue', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          backgroundColor: Colors.deepOrange,
                                           foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                           visualDensity: VisualDensity.compact,

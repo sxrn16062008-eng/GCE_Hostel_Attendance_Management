@@ -471,37 +471,45 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.primary.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(8),
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.primary.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Icon(Icons.meeting_room_rounded,
+                                              size: 18, color: AppTheme.primaryLight),
                                         ),
-                                        child: const Icon(Icons.meeting_room_rounded,
-                                            size: 18, color: AppTheme.primaryLight),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        'Room ${room.roomNumber}',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(6),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Room ${room.roomNumber}',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                         ),
-                                        child: Text(
-                                          room.block,
-                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              room.block,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
+                                  const SizedBox(width: 6),
                                   Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
                                         '$roomPresent P',
@@ -518,11 +526,11 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12),
                                       ),
-                                      const SizedBox(width: 6),
+                                      const SizedBox(width: 4),
                                       TextButton(
                                         onPressed: () => _markRoomAll(roomStudents, AppConstants.statusPresent),
                                         style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6),
                                           visualDensity: VisualDensity.compact,
                                         ),
                                         child: const Text('All P', style: TextStyle(fontSize: 11)),

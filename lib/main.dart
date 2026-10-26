@@ -12,6 +12,9 @@ import 'services/attendance_service.dart';
 import 'services/notification_service.dart';
 import 'firebase_options.dart';
 
+import 'services/connectivity_service.dart';
+import 'state/network_provider.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
@@ -37,8 +40,11 @@ class GCEBoysHostelApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final connectivityService = ConnectivityService();
+
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => NetworkProvider(connectivityService)),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider(AuthService())),
         ChangeNotifierProvider(
