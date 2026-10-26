@@ -115,6 +115,26 @@ class AuthProvider with ChangeNotifier {
       return e.toString().replaceAll('Exception: ', '');
     }
   }
+
+  /// Syncs the current user profile from provider when assigned rooms or details change
+  void syncUser(AppUser updatedUser) {
+    if (_currentUser == null) return;
+    if (_currentUser!.id == updatedUser.id ||
+        _currentUser!.email.toLowerCase() == updatedUser.email.toLowerCase()) {
+      if (!listEquals(_currentUser!.assignedRoomIds, updatedUser.assignedRoomIds) ||
+          _currentUser!.name != updatedUser.name ||
+          _currentUser!.isActive != updatedUser.isActive) {
+        _currentUser = updatedUser;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Manually set the current user state
+  void updateCurrentUser(AppUser user) {
+    _currentUser = user;
+    notifyListeners();
+  }
 }
 
 // Alias for provider

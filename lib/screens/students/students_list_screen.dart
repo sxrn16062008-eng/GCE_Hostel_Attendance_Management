@@ -28,20 +28,20 @@ class _StudentsListScreenState extends State<StudentsListScreen> {
     final provider = context.watch<HostelDataProvider>();
     final auth = context.watch<AppAuthProvider>();
 
-    final user = auth.currentUser;
-    final assignedIds = user?.assignedRoomIds ?? [];
-    final hasAssignedRooms = !auth.isAdmin && assignedIds.isNotEmpty;
+    final rawUser = auth.currentUser;
+    final user = provider.getEffectiveUser(rawUser);
+    final isRep = !auth.isAdmin;
 
-    final baseRooms = hasAssignedRooms
-        ? provider.rooms.where((r) => assignedIds.contains(r.id)).toList()
+    final baseRooms = isRep
+        ? provider.getRoomsForRepresentative(user)
         : provider.rooms;
 
     final allRooms = ['All', ...baseRooms.map((r) => r.roomNumber)];
     final allDepts = ['All', ...AppConstants.departments];
     final allYears = ['All', ...AppConstants.years];
 
-    final baseStudents = hasAssignedRooms
-        ? provider.students.where((s) => assignedIds.contains(s.roomId)).toList()
+    final baseStudents = isRep
+        ? provider.getStudentsForRepresentative(user)
         : provider.students;
 
     // Filter students
@@ -65,17 +65,20 @@ class _StudentsListScreenState extends State<StudentsListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(hasAssignedRooms ? 'My Students' : 'Students Directory'),
+        title: Text(isRep
+            ? 'My Allocated Students (${baseStudents.length})'
+            : 'Students Directory (${provider.students.length})'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person_add_rounded),
-            tooltip: 'Add Student',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AddEditStudentScreen()),
-              );
-            },
-          ),
+          if (auth.isAdmin)
+            IconButton(
+              icon: const Icon(Icons.person_add_rounded),
+              tooltip: 'Add Student',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AddEditStudentScreen()),
+                );
+              },
+            ),
         ],
       ),
       body: Column(
@@ -156,17 +159,21 @@ class _StudentsListScreenState extends State<StudentsListScreen> {
           Expanded(
             child: filteredStudents.isEmpty
                 ? EmptyStateView(
-                    title: 'No Students Found',
-                    subtitle: provider.students.isEmpty
-                        ? 'Add students to hostel rooms to manage them.'
-                        : 'No students match your filter criteria.',
+                    title: isRep ? 'No Students Allocated' : 'No Students Found',
+                    subtitle: isRep
+                        ? 'Chief Warden has not allocated any rooms or students to your account (${user.name}) yet.\nOnce allocated, students in your rooms will appear here.'
+                        : (provider.students.isEmpty
+                            ? 'Add students to hostel rooms to manage them.'
+                            : 'No students match your filter criteria.'),
                     icon: Icons.people_outline_rounded,
-                    buttonText: '+ Add Student',
-                    onButtonPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const AddEditStudentScreen()),
-                      );
-                    },
+                    buttonText: isRep ? 'Refresh' : '+ Add Student',
+                    onButtonPressed: isRep
+                        ? () => provider.refreshData()
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const AddEditStudentScreen()),
+                            );
+                          },
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
@@ -183,13 +190,15 @@ class _StudentsListScreenState extends State<StudentsListScreen> {
                             ),
                           );
                         },
-                        onEdit: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => AddEditStudentScreen(student: student),
-                            ),
-                          );
-                        },
+                        onEdit: auth.isAdmin
+                            ? () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => AddEditStudentScreen(student: student),
+                                  ),
+                                );
+                              }
+                            : () {},
                         onDelete: () async {
                           final confirm = await ConfirmDialog.show(
                             context,
@@ -222,15 +231,17 @@ class _StudentsListScreenState extends State<StudentsListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AddEditStudentScreen()),
-          );
-        },
-        icon: const Icon(Icons.person_add_rounded),
-        label: const Text('Add Student'),
-      ),
+      floatingActionButton: auth.isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AddEditStudentScreen()),
+                );
+              },
+              icon: const Icon(Icons.person_add_rounded),
+              label: const Text('Add Student'),
+            )
+          : null,
     );
   }
 

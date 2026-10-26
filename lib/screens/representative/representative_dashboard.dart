@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/attendance_model.dart';
 import '../../theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import '../../state/auth_provider.dart';
@@ -26,16 +27,21 @@ class RepresentativeDashboard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final auth = context.watch<AppAuthProvider>();
     final provider = context.watch<HostelDataProvider>();
-    final user = auth.currentUser;
-    final assignedIds = user?.assignedRoomIds ?? [];
-    final hasAssignedRooms = !auth.isAdmin && assignedIds.isNotEmpty;
+    final rawUser = auth.currentUser;
+    final user = provider.getEffectiveUser(rawUser);
+    final myRooms = provider.getRoomsForRepresentative(user);
+    final assignedIds = user.assignedRoomIds;
+    final hasAssignedRooms = myRooms.isNotEmpty;
 
     final summary = hasAssignedRooms
         ? provider.getTodaySummaryForRooms(assignedIds)
-        : provider.getTodaySummary();
-    final totalRooms = hasAssignedRooms
-        ? provider.rooms.where((r) => assignedIds.contains(r.id)).length
-        : provider.rooms.length;
+        : const AttendanceSummary(
+            totalStudents: 0,
+            presentCount: 0,
+            absentCount: 0,
+            notMarkedCount: 0,
+          );
+    final totalRooms = myRooms.length;
 
     return Scaffold(
       body: SafeArea(
@@ -80,8 +86,8 @@ class RepresentativeDashboard extends StatelessWidget {
                               ),
                               child: Center(
                                 child: Text(
-                                  (user?.name.isNotEmpty == true)
-                                      ? user!.name[0].toUpperCase()
+                                  user.name.isNotEmpty
+                                      ? user.name[0].toUpperCase()
                                       : 'R',
                                   style: const TextStyle(
                                     color: Colors.white,
@@ -101,7 +107,7 @@ class RepresentativeDashboard extends StatelessWidget {
                                   children: [
                                     Flexible(
                                       child: Text(
-                                        user?.name ?? 'Representative',
+                                        user.name.isNotEmpty ? user.name : 'Representative',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: Theme.of(context)

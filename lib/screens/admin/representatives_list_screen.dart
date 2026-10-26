@@ -8,6 +8,7 @@ import '../../utils/constants.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/empty_state_view.dart';
 import 'add_edit_representative_dialog.dart';
+import 'allocate_rooms_dialog.dart';
 
 class RepresentativesListScreen extends StatefulWidget {
   const RepresentativesListScreen({super.key});
@@ -277,65 +278,90 @@ class _RepresentativeCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            // Assigned Rooms Section
+            const SizedBox(height: 12),
+            // Assigned Rooms Section with Direct Allocate Rooms Button
             Consumer<HostelDataProvider>(
               builder: (context, provider, _) {
-                if (rep.assignedRoomIds.isEmpty) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.info_outline_rounded, size: 13, color: Colors.amber),
-                        SizedBox(width: 4),
-                        Text(
-                          'No specific rooms assigned (Full Access)',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.amber),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
+                final assignedCount = rep.assignedRoomIds.length;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Assigned Rooms (${rep.assignedRoomIds.length}):',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Allocated Rooms ($assignedCount):',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => AllocateRoomsDialog.show(context, representative: rep),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            side: BorderSide(color: AppTheme.primaryLight.withValues(alpha: 0.6)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          icon: const Icon(Icons.meeting_room_rounded, size: 14, color: AppTheme.primaryLight),
+                          label: Text(
+                            assignedCount == 0 ? 'Allocate Rooms' : 'Edit Rooms',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryLight),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: rep.assignedRoomIds.map((roomId) {
-                        final room = provider.rooms.firstWhere(
-                          (r) => r.id == roomId,
-                          orElse: () => RoomModel(id: roomId, roomNumber: roomId, block: '', capacity: 0),
-                        );
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    const SizedBox(height: 6),
+                    if (assignedCount == 0)
+                      GestureDetector(
+                        onTap: () => AllocateRoomsDialog.show(context, representative: rep),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha: 0.12),
+                            color: Colors.amber.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppTheme.primaryLight.withValues(alpha: 0.35)),
+                            border: Border.all(color: Colors.amber.withValues(alpha: 0.35)),
                           ),
-                          child: Text(
-                            'Room ${room.roomNumber} (${room.block.isNotEmpty ? room.block : "Hostel"})',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryLight,
+                          child: const Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded, size: 16, color: Colors.amber),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'No rooms allocated. Tap here to assign specific rooms to this representative.',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.amber),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: rep.assignedRoomIds.map((roomId) {
+                          final room = provider.rooms.firstWhere(
+                            (r) => r.id == roomId || r.roomNumber == roomId,
+                            orElse: () => RoomModel(id: roomId, roomNumber: roomId, block: '', capacity: 0),
+                          );
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppTheme.primaryLight.withValues(alpha: 0.35)),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                            child: Text(
+                              'Room ${room.roomNumber}${room.block.isNotEmpty ? " (${room.block})" : ""}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryLight,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
                   ],
                 );
               },

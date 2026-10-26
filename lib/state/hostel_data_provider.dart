@@ -329,11 +329,71 @@ class HostelDataProvider extends ChangeNotifier {
     );
   }
 
+  /// Returns the latest live user object from representatives cache if matching ID or email
+  AppUser getEffectiveUser(AppUser? user) {
+    if (user == null) {
+      return AppUser(
+        id: '',
+        name: 'Representative',
+        email: '',
+        phone: '',
+        role: AppConstants.roleRepresentative,
+      );
+    }
+    if (user.isAdmin) return user;
+    try {
+      return _representatives.firstWhere(
+        (r) =>
+            r.id == user.id ||
+            r.email.toLowerCase().trim() == user.email.toLowerCase().trim(),
+        orElse: () => user,
+      );
+    } catch (_) {
+      return user;
+    }
+  }
+
+  /// Returns the exact list of rooms allocated to a given representative
+  List<RoomModel> getRoomsForRepresentative(AppUser? rep) {
+    if (rep == null) return [];
+    if (rep.isAdmin) return List.unmodifiable(_rooms);
+
+    final assignedIds = rep.assignedRoomIds;
+    if (assignedIds.isEmpty) return [];
+
+    return _rooms.where((r) {
+      return assignedIds.contains(r.id) || assignedIds.contains(r.roomNumber);
+    }).toList();
+  }
+
+  /// Returns the exact list of students residing in the rooms allocated to a representative
+  List<StudentModel> getStudentsForRepresentative(AppUser? rep) {
+    if (rep == null) return [];
+    if (rep.isAdmin) return List.unmodifiable(_students);
+
+    final allocatedRooms = getRoomsForRepresentative(rep);
+    if (allocatedRooms.isEmpty) return [];
+
+    final roomIds = allocatedRooms.map((r) => r.id).toSet();
+    final roomNumbers = allocatedRooms.map((r) => r.roomNumber).toSet();
+
+    return _students.where((s) {
+      return roomIds.contains(s.roomId) || roomNumbers.contains(s.roomNumber);
+    }).toList();
+  }
+
   AttendanceSummary getTodaySummaryForRooms(List<String>? roomIds) {
     if (roomIds == null || roomIds.isEmpty) {
-      return getTodaySummary();
+      return const AttendanceSummary(
+        totalStudents: 0,
+        presentCount: 0,
+        absentCount: 0,
+        notMarkedCount: 0,
+      );
     }
-    final targetStudents = _students.where((s) => roomIds.contains(s.roomId)).toList();
+    final targetStudents = _students.where((s) {
+      return roomIds.contains(s.roomId) || roomIds.contains(s.roomNumber);
+    }).toList();
     final total = targetStudents.length;
     if (total == 0) {
       return const AttendanceSummary(

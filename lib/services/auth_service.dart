@@ -68,7 +68,7 @@ class AuthService {
       password: 'password123',
       phone: '9876543211',
       role: AppConstants.roleRepresentative,
-      assignedRoomIds: [],
+      assignedRoomIds: const ['room_101', 'room_102'],
       isActive: true,
       createdAt: DateTime.now(),
     );
@@ -261,7 +261,7 @@ class AuthService {
           password: 'password123',
           phone: '9876543211',
           role: AppConstants.roleRepresentative,
-          assignedRoomIds: [],
+          assignedRoomIds: const ['room_101', 'room_102'],
           isActive: true,
         );
       }

@@ -29,6 +29,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final isAdmin = auth.isAdmin;
     final pendingCount = provider.pendingComplaintsCount;
 
+    // Real-time synchronization of representative profile & assigned rooms
+    final effectiveUser = provider.getEffectiveUser(auth.currentUser);
+    if (!isAdmin && effectiveUser.id.isNotEmpty && auth.currentUser != null) {
+      if (effectiveUser.assignedRoomIds != auth.currentUser!.assignedRoomIds) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          auth.syncUser(effectiveUser);
+        });
+      }
+    }
+
     final List<Widget> screens = isAdmin
         ? const [
             WardenDashboard(),

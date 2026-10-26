@@ -284,7 +284,13 @@ class _AddStudentComplaintDialogState extends State<AddStudentComplaintDialog> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<HostelDataProvider>();
-    final students = provider.students;
+    final auth = context.watch<AppAuthProvider>();
+    final rawUser = auth.currentUser;
+    final user = provider.getEffectiveUser(rawUser);
+    final isRep = !auth.isAdmin;
+    final students = isRep
+        ? provider.getStudentsForRepresentative(user)
+        : provider.students;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(

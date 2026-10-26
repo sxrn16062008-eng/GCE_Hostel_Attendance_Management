@@ -26,15 +26,15 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
     final provider = context.watch<HostelDataProvider>();
     final auth = context.watch<AppAuthProvider>();
 
-    final user = auth.currentUser;
-    final assignedIds = user?.assignedRoomIds ?? [];
-    final hasAssignedRooms = !auth.isAdmin && assignedIds.isNotEmpty;
+    final rawUser = auth.currentUser;
+    final user = provider.getEffectiveUser(rawUser);
+    final isRep = !auth.isAdmin;
 
     final allBlocks = ['All', ...provider.blocks];
 
-    // Filter rooms by assigned rooms if rep, search query and block
-    final baseRooms = hasAssignedRooms
-        ? provider.rooms.where((r) => assignedIds.contains(r.id)).toList()
+    // Filter rooms: If rep, strictly show ONLY their allocated rooms
+    final baseRooms = isRep
+        ? provider.getRoomsForRepresentative(user)
         : provider.rooms;
 
     final filteredRooms = baseRooms.where((room) {
@@ -48,29 +48,21 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
     }).toList();
 
     void handleAddRoom() async {
-      final createdRoom = await AddEditRoomDialog.show(context);
-      if (createdRoom != null && !auth.isAdmin && user != null && context.mounted) {
-        // Automatically link this room to the representative
-        final updatedIds = [...assignedIds, createdRoom.id];
-        await provider.updateRepresentative(
-          userId: user.id,
-          name: user.name,
-          phone: user.phone,
-          assignedRoomIds: updatedIds,
-          isActive: user.isActive,
-        );
-      }
+      await AddEditRoomDialog.show(context);
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(hasAssignedRooms ? 'My Assigned Rooms' : 'Hostel Rooms'),
+        title: Text(isRep
+            ? 'My Allocated Rooms (${baseRooms.length})'
+            : 'Hostel Rooms (${provider.rooms.length})'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            tooltip: 'Add Room',
-            onPressed: handleAddRoom,
-          ),
+          if (auth.isAdmin)
+            IconButton(
+              icon: const Icon(Icons.add_rounded),
+              tooltip: 'Add Room',
+              onPressed: handleAddRoom,
+            ),
         ],
       ),
       body: Column(
@@ -127,13 +119,17 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
           Expanded(
             child: filteredRooms.isEmpty
                 ? EmptyStateView(
-                    title: 'No Rooms Found',
-                    subtitle: provider.rooms.isEmpty
-                        ? 'Get started by adding your first hostel room.'
-                        : 'No rooms match your filter criteria.',
+                    title: isRep ? 'No Rooms Allocated' : 'No Rooms Found',
+                    subtitle: isRep
+                        ? 'Chief Warden has not allocated any rooms to your account (${user.name}).\nAsk the Warden to assign your rooms in the Warden Portal.'
+                        : (provider.rooms.isEmpty
+                            ? 'Get started by adding your first hostel room.'
+                            : 'No rooms match your filter criteria.'),
                     icon: Icons.meeting_room_outlined,
-                    buttonText: '+ Add Room',
-                    onButtonPressed: () => AddEditRoomDialog.show(context),
+                    buttonText: isRep ? 'Refresh' : '+ Add Room',
+                    onButtonPressed: isRep
+                        ? () => provider.refreshData()
+                        : () => AddEditRoomDialog.show(context),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
@@ -150,7 +146,9 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
                             ),
                           );
                         },
-                        onEdit: () => AddEditRoomDialog.show(context, room: room),
+                        onEdit: auth.isAdmin
+                            ? () => AddEditRoomDialog.show(context, room: room)
+                            : () {},
                         onDelete: () async {
                           final confirm = await ConfirmDialog.show(
                             context,
@@ -182,11 +180,13 @@ class _RoomsListScreenState extends State<RoomsListScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: handleAddRoom,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add Room'),
-      ),
+      floatingActionButton: auth.isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: handleAddRoom,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add Room'),
+            )
+          : null,
     );
   }
 }

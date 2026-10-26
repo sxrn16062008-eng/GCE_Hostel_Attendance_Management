@@ -159,17 +159,18 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     final provider = context.watch<HostelDataProvider>();
     final auth = context.watch<AppAuthProvider>();
 
-    final user = auth.currentUser;
-    final assignedIds = user?.assignedRoomIds ?? [];
-    final hasAssignedRooms = !auth.isAdmin && assignedIds.isNotEmpty;
+    final rawUser = auth.currentUser;
+    final user = provider.getEffectiveUser(rawUser);
+    final isRep = !auth.isAdmin;
 
     // Filter available rooms and students
-    final displayRooms = hasAssignedRooms
-        ? provider.rooms.where((r) => assignedIds.contains(r.id)).toList()
+    // For representatives: Strictly show ONLY their allocated rooms
+    final List<RoomModel> displayRooms = isRep
+        ? provider.getRoomsForRepresentative(user)
         : provider.rooms;
 
-    final displayStudents = hasAssignedRooms
-        ? provider.students.where((s) => assignedIds.contains(s.roomId)).toList()
+    final List<StudentModel> displayStudents = isRep
+        ? provider.getStudentsForRepresentative(user)
         : provider.students;
 
     // Ensure statusMap has keys for all students
@@ -198,24 +199,29 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(hasAssignedRooms ? 'Mark Attendance (My Rooms)' : 'Mark Hostel Attendance'),
+        title: Text(isRep
+            ? 'My Rooms Attendance (${displayRooms.length} Rooms)'
+            : 'Mark Hostel Attendance'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_business_rounded),
-            tooltip: 'Add Room',
-            onPressed: () => AddEditRoomDialog.show(context),
-          ),
+          if (auth.isAdmin)
+            IconButton(
+              icon: const Icon(Icons.add_business_rounded),
+              tooltip: 'Add Room',
+              onPressed: () => AddEditRoomDialog.show(context),
+            ),
         ],
       ),
       body: displayRooms.isEmpty
           ? EmptyStateView(
-              title: 'No Rooms Available',
-              subtitle: hasAssignedRooms
-                  ? 'No rooms are currently assigned to your account. Please contact the Warden.'
+              title: isRep ? 'No Rooms Allocated Yet' : 'No Rooms Available',
+              subtitle: isRep
+                  ? 'Chief Warden has not allocated any rooms to your account (${user.name}).\nAsk the Chief Warden to allocate your specific rooms in the Warden Portal.'
                   : 'Get started by creating your first hostel room.',
               icon: Icons.meeting_room_outlined,
-              buttonText: '+ Create Room',
-              onButtonPressed: () => AddEditRoomDialog.show(context),
+              buttonText: isRep ? 'Refresh Rooms' : '+ Create Room',
+              onButtonPressed: isRep
+                  ? () => provider.refreshData()
+                  : () => AddEditRoomDialog.show(context),
             )
           : Column(
               children: [

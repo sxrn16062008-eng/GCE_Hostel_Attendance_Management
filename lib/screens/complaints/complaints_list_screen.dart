@@ -39,15 +39,15 @@ class _ComplaintsListScreenState extends State<ComplaintsListScreen> with Single
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final auth = context.watch<AppAuthProvider>();
     final provider = context.watch<HostelDataProvider>();
-    final user = auth.currentUser;
+    final rawUser = auth.currentUser;
+    final user = provider.getEffectiveUser(rawUser);
     final isWarden = auth.isAdmin;
-    final assignedIds = user?.assignedRoomIds ?? [];
-    final hasAssignedRooms = !isWarden && assignedIds.isNotEmpty;
+    final assignedIds = user.assignedRoomIds;
 
     // Filter base complaints for representative
-    final baseComplaints = hasAssignedRooms
-        ? provider.getComplaintsForRooms(assignedIds)
-        : provider.complaints;
+    final baseComplaints = isWarden
+        ? provider.complaints
+        : (assignedIds.isEmpty ? <ComplaintModel>[] : provider.getComplaintsForRooms(assignedIds));
 
     final pendingList = baseComplaints.where((c) => c.isPending).toList();
     final inProgressList = baseComplaints.where((c) => c.isInProgress).toList();

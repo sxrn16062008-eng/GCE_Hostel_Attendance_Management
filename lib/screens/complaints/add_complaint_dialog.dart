@@ -111,12 +111,12 @@ class _AddComplaintDialogState extends State<AddComplaintDialog> {
   Widget build(BuildContext context) {
     final provider = context.watch<HostelDataProvider>();
     final auth = context.watch<AppAuthProvider>();
-    final user = auth.currentUser;
-    final assignedIds = user?.assignedRoomIds ?? [];
-    final hasAssignedRooms = !auth.isAdmin && assignedIds.isNotEmpty;
+    final rawUser = auth.currentUser;
+    final user = provider.getEffectiveUser(rawUser);
+    final isRep = !auth.isAdmin;
 
-    final availableRooms = hasAssignedRooms
-        ? provider.rooms.where((r) => assignedIds.contains(r.id)).toList()
+    final availableRooms = isRep
+        ? provider.getRoomsForRepresentative(user)
         : provider.rooms;
 
     if (_selectedRoomId == null && availableRooms.isNotEmpty) {
